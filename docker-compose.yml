@@ -1,0 +1,19 @@
+version: '2.4'
+
+services:
+  vnu:
+    image: validator/validator
+    restart: always
+  w3c:
+    build: .
+    image: netresearch/validator-w3c
+    ports:
+     - "80:80"
+    restart: always
+    links:
+     - vnu:vnu
+
+networks:
+  default:
+    driver: "bridge"
+
