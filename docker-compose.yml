@@ -13,7 +13,3 @@ services:
     links:
      - vnu:vnu
 
-networks:
-  default:
-    driver: "bridge"
-
