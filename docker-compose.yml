@@ -1,15 +1,13 @@
-version: '2.4'
+version: '3.5'
 
 services:
   vnu:
     image: ghcr.io/validator/validator:latest
-    restart: always
+    restart: unless-stopped
+
   w3c:
     build: .
     image: ghcr.io/netresearch/validator-w3c
     ports:
      - "80:80"
-    restart: always
-    links:
-     - vnu:vnu
-
+    restart: unless-stopped
