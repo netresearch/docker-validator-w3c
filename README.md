@@ -1,5 +1,6 @@
 # Docker image for W3C/HTML5 validator
 
+Provides W3C Markup Validation Service and Nu Html Checker (v.Nu).
 
 ## Dependencies
 
@@ -7,7 +8,7 @@
 
 ## How to run
 
-Use docker-compose to run this w3c validator along with v.Nu, docker-compose.yml example:
+Use docker compose to run this W3C validator along with Nu Html Checker (v.Nu), docker-compose.yml example:
 
 ```yml
 ---
@@ -26,8 +27,4 @@ services:
     restart: unless-stopped
 ```
 
-Now open <http://localhost/> in your browser.
-
-## ToDo
-
-* make Nu Html Checker directly available under <http://localhost/nu> , similar to <https://validator.w3.org/nu/>
+Now open <http://localhost/> or <http://localhost/nu/> in your browser.

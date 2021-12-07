@@ -39,6 +39,7 @@ a2enmod cgid
 a2enmod expires
 a2enmod include
 a2enmod rewrite
+a2enmod proxy_http
 
 a2enconf server
 a2enconf w3c-markup-validator
