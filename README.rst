@@ -18,7 +18,7 @@ Use docker-compose to run this w3c validator along with v.Nu, docker-compose.yml
     
     services:
       vnu:
-        image: validator/validator
+        image: ghcr.io/validator/validator:latest
         restart: always
       w3c:
         build: .
