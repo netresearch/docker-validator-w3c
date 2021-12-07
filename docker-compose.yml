@@ -2,7 +2,7 @@ version: '2.4'
 
 services:
   vnu:
-    image: validator/validator
+    image: ghcr.io/validator/validator:latest
     restart: always
   w3c:
     build: .
