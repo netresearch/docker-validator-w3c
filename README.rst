@@ -22,7 +22,7 @@ Use docker-compose to run this w3c validator along with v.Nu, docker-compose.yml
         restart: always
       w3c:
         build: .
-        image: netresearch/validator-w3c
+        image: ghcr.io/netresearch/validator-w3c
         ports:
          - "80:80"
         restart: always
