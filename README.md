@@ -33,14 +33,15 @@ Now open <http://localhost/> or <http://localhost/nu/> in your browser.
 
 * Nu Html Checker (v.Nu): <https://github.com/validator/validator>
 * W3C Markup Validation Service: <https://validator.w3.org/>
-* W3C Markup Validation Service sources: <https://github.com/w3c/markup-validator>
+  * W3C Markup Validator sources: <https://github.com/w3c/markup-validator>
+  * W3C Markup Validator wiki: <https://www.w3.org/wiki/MarkupValidator>
+* W3C CSS Validation: <https://jigsaw.w3.org/css-validator/>
+  * W3C CSS Validator sources: <https://github.com/w3c/css-validator>
+  * W3C CSS Validator wiki: <https://www.w3.org/wiki/CssValidator>
 * Docker: <https://www.docker.com/>
 * Moby Project sources: <https://github.com/moby/moby>
 * Docker Compose: <https://docs.docker.com/compose/>
 * Docker Compose sources: <https://github.com/docker/compose>
-* W3C CSS Validator: <https://jigsaw.w3.org/css-validator/>
-* W3C CSS Validator sources: <https://github.com/w3c/css-validator>
-* W3C CSS Validator wiki: <https://www.w3.org/wiki/CssValidator/Installation>
 
 ## ToDo
 
