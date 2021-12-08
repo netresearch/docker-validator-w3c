@@ -8,7 +8,7 @@ Provides W3C Markup Validation Service and Nu Html Checker (v.Nu).
 
 ## How to run
 
-Use docker compose to run this W3C validator along with Nu Html Checker (v.Nu), docker-compose.yml example:
+Use Docker Compose to run this W3C validator along with Nu Html Checker (v.Nu), docker-compose.yml example:
 
 ```yml
 ---
@@ -28,3 +28,20 @@ services:
 ```
 
 Now open <http://localhost/> or <http://localhost/nu/> in your browser.
+
+## References
+
+* Nu Html Checker (v.Nu): <https://github.com/validator/validator>
+* W3C Markup Validation Service: <https://validator.w3.org/>
+* W3C Markup Validation Service sources: <https://github.com/w3c/markup-validator>
+* Docker: <https://www.docker.com/>
+* Moby Project sources: <https://github.com/moby/moby>
+* Docker Compose: <https://docs.docker.com/compose/>
+* Docker Compose sources: <https://github.com/docker/compose>
+* W3C CSS Validator: <https://jigsaw.w3.org/css-validator/>
+* W3C CSS Validator sources: <https://github.com/w3c/css-validator>
+* W3C CSS Validator wiki: <https://www.w3.org/wiki/CssValidator/Installation>
+
+## ToDo
+
+* Add W3C CSS Validator
