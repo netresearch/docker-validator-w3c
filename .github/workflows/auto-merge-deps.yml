@@ -65,8 +65,33 @@ jobs:
           echo "Timeout waiting for CI checks"
           exit 1
 
+      - name: Check for workflow file changes
+        id: check-workflows
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          WORKFLOW_FILES=$(gh pr diff "$PR_URL" --name-only | grep -E '^\.github/workflows/' || true)
+          if [ -n "$WORKFLOW_FILES" ]; then
+            echo "modifies_workflows=true" >> "$GITHUB_OUTPUT"
+            echo "⚠️ PR modifies workflow files - requires manual merge (GITHUB_TOKEN lacks workflows permission)"
+            echo "Modified workflow files:"
+            echo "$WORKFLOW_FILES"
+          else
+            echo "modifies_workflows=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Merge PR
+        if: steps.check-workflows.outputs.modifies_workflows != 'true'
         run: gh pr merge --rebase "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Comment on workflow PR
+        if: steps.check-workflows.outputs.modifies_workflows == 'true'
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment "$PR_URL" --body "✅ CI checks passed and PR approved. This PR modifies workflow files and requires manual merge (GITHUB_TOKEN cannot merge workflow changes)."
