@@ -25,7 +25,7 @@ jobs:
       - name: Dependabot metadata
         id: metadata
         if: github.event.pull_request.user.login == 'dependabot[bot]'
-        uses: dependabot/fetch-metadata@v2
+        uses: dependabot/fetch-metadata@5e5f99653a5b510e8555840e80cbf1514ad4af38 # v2.2.0
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
