@@ -14,18 +14,20 @@ jobs:
   auto-merge:
     name: Auto-merge dependency PRs
     runs-on: ubuntu-latest
+    # Use PR author login instead of github.actor to handle synchronize events
+    # when someone else pushes to the dependabot/renovate branch
     if: github.event.pull_request.user.login == 'dependabot[bot]' || github.event.pull_request.user.login == 'renovate[bot]'
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@v2
+        uses: step-security/harden-runner@a90bcbc6539c36a85cdfeb73f7e2f433735f215b # v2.15.0
         with:
           egress-policy: audit
 
       - name: Dependabot metadata
         id: metadata
         if: github.event.pull_request.user.login == 'dependabot[bot]'
-        uses: dependabot/fetch-metadata@v2
+        uses: dependabot/fetch-metadata@21025c705c08248db411dc16f3619e6b5f9ea21a # v2.5.0
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
@@ -36,34 +38,33 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Wait for CI checks
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Waiting for CI checks to pass..."
-          sleep 30
-          # Poll checks excluding this workflow to avoid deadlock
-          for i in $(seq 1 90); do
-            CHECKS=$(gh pr checks "$PR_URL" --json name,state,conclusion 2>/dev/null || echo "[]")
-            # Filter out auto-merge workflow and check states
-            PENDING=$(echo "$CHECKS" | jq -r '.[] | select(.name != "Auto-merge dependency PRs" and .name != "auto-merge") | select(.state == "PENDING" or .conclusion == null) | .name' | head -5)
-            FAILED=$(echo "$CHECKS" | jq -r '.[] | select(.name != "Auto-merge dependency PRs" and .name != "auto-merge") | select(.conclusion == "FAILURE" or .conclusion == "CANCELLED") | .name' | head -5)
+          echo "Waiting for CI checks to complete..."
+          for i in {1..90}; do
+            CHECKS=$(gh pr checks "$PR_URL" --json name,state \
+              --jq '[.[] | select(.name != "Auto-merge dependency PRs")]')
 
-            if [ -n "$FAILED" ]; then
-              echo "CI checks failed: $FAILED"
+            FAILED=$(echo "$CHECKS" | jq '[.[] | select(.state == "FAILURE" or .state == "ERROR")] | length')
+            PENDING=$(echo "$CHECKS" | jq '[.[] | select(.state == "PENDING" or .state == "QUEUED" or .state == "IN_PROGRESS")] | length')
+
+            if [ "$FAILED" != "0" ]; then
+              echo "Some checks failed, skipping merge"
               exit 1
             fi
 
-            if [ -z "$PENDING" ]; then
-              echo "All CI checks passed!"
+            if [ "$PENDING" = "0" ]; then
+              echo "All checks passed!"
               exit 0
             fi
 
-            echo "Waiting for: $PENDING"
+            echo "Waiting for $PENDING check(s)... (attempt $i/90)"
             sleep 10
           done
-          echo "Timeout waiting for CI checks"
+          echo "Timeout waiting for checks"
           exit 1
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check for workflow file changes
         id: check-workflows
@@ -74,7 +75,7 @@ jobs:
           WORKFLOW_FILES=$(gh pr diff "$PR_URL" --name-only | grep -E '^\.github/workflows/' || true)
           if [ -n "$WORKFLOW_FILES" ]; then
             echo "modifies_workflows=true" >> "$GITHUB_OUTPUT"
-            echo "⚠️ PR modifies workflow files - requires manual merge (GITHUB_TOKEN lacks workflows permission)"
+            echo "PR modifies workflow files - requires manual merge (GITHUB_TOKEN lacks workflows permission)"
             echo "Modified workflow files:"
             echo "$WORKFLOW_FILES"
           else
@@ -83,7 +84,7 @@ jobs:
 
       - name: Merge PR
         if: steps.check-workflows.outputs.modifies_workflows != 'true'
-        run: gh pr merge --rebase "$PR_URL"
+        run: gh pr merge --merge "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -94,4 +95,4 @@ jobs:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr comment "$PR_URL" --body "✅ CI checks passed and PR approved. This PR modifies workflow files and requires manual merge (GITHUB_TOKEN cannot merge workflow changes)."
+          gh pr comment "$PR_URL" --body "CI checks passed and PR approved. This PR modifies workflow files and requires manual merge (GITHUB_TOKEN cannot merge workflow changes)."
