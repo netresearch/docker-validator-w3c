@@ -36,23 +36,23 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
       - name: Install cosign
         if: github.event_name != 'pull_request'
-        uses: sigstore/cosign-installer@v4.1.0
+        uses: sigstore/cosign-installer@ba7bc0a3fef59531c69a25acd34668d6d3fe6f22 # v4.1.0
 
       # Workaround: https://github.com/docker/build-push-action/issues/461
       - name: Setup Docker buildx
-        uses: docker/setup-buildx-action@8016837eba79c3b51bf2025379f48b6fc50f1236
+        uses: docker/setup-buildx-action@8016837eba79c3b51bf2025379f48b6fc50f1236 # 8016837eba79c3b51bf2025379f48b6fc50f1236
 
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action
       - name: Log into registry ${{ env.REGISTRY }}
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@c144859092e8e353f3e118b0b329679a62351c3e
+        uses: docker/login-action@c144859092e8e353f3e118b0b329679a62351c3e # c144859092e8e353f3e118b0b329679a62351c3e
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -70,7 +70,7 @@ jobs:
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image
         id: build-and-push
-        uses: docker/build-push-action@de308676347136a77704e0f257298c8f1b30054f
+        uses: docker/build-push-action@de308676347136a77704e0f257298c8f1b30054f # de308676347136a77704e0f257298c8f1b30054f
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
