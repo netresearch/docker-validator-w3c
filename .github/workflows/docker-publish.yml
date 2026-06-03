@@ -52,7 +52,7 @@ jobs:
       # https://github.com/docker/login-action
       - name: Log into registry ${{ env.REGISTRY }}
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # c144859092e8e353f3e118b0b329679a62351c3e
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # c144859092e8e353f3e118b0b329679a62351c3e
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -62,7 +62,7 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@4f5b5234679dfa19837d4942067c97d7df43b7b3
+        uses: docker/metadata-action@3caf19fbe3db1a1a6a8bdce189e09ac0ed35d513
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
