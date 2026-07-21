@@ -1,55 +1,40 @@
-# CI workflow for Docker image
 name: CI
 
 on:
   push:
-    branches: [master, main]
+    branches:
+      - master
+      - main
   pull_request:
-    branches: [master, main]
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
-  hadolint:
-    name: Hadolint
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
-        with:
-          egress-policy: audit
-
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Run Hadolint
-        uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
-        continue-on-error: true  # Allow existing issues, report but don't block
-        with:
-          dockerfile: Dockerfile
-          failure-threshold: error
-
-  docker-build:
-    name: Docker Build Test
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
-        with:
-          egress-policy: audit
-
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
-
-      - name: Build (no push)
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
-        with:
-          context: .
-          push: false
-          tags: test:latest
+  # Gold-standard container CI via the org meta-reusable: Dockerfile lint
+  # (+ shellcheck of setup/), YAML/Markdown/compose lint, validation-only
+  # image build with Trivy, secret scanning and dependency review — one
+  # call site. Push + cosign stay in docker-publish.yml.
+  docker-ci:
+    uses: netresearch/.github/.github/workflows/docker-image-ci.yml@main
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+      id-token: write
+      attestations: write
+      actions: read
+      pull-requests: write
+    with:
+      image-name: docker-validator-w3c
+      dockerfile: ./Dockerfile
+      lint-container: true
+      shell-scandirs: setup
+      lint-yaml: true
+      lint-markdown: true
+      lint-compose: true
+      compose-files: docker-compose.yml
+      enable-gitleaks: true
+      enable-codeql: false
+      enable-smoke-test: false
+    secrets:
+      GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
