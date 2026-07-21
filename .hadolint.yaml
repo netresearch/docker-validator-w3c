@@ -1,0 +1,8 @@
+# Hadolint configuration.
+#
+# DL3008 (pin apt package versions) is ignored: this image builds on the
+# rolling debian:stable-slim base, where pinned apt versions rotate out of
+# the mirror and break the build. The RUN block already uses
+# --no-install-recommends and cleans apt lists.
+ignored:
+  - DL3008
