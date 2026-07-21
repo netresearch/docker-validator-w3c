@@ -23,7 +23,7 @@ RUN mkdir -p /usr/share/man/man1/ && touch /usr/share/man/man1/sh.distrib.1.gz \
  && rm -rf /var/lib/apt/lists/* \
  && rm -f /var/cache/apt/*.bin
 
-ADD setup/ /
+COPY setup/ /
 RUN chmod u+x /*.sh \
  && /configure.sh \
  && ln -sf /dev/stdout /var/log/apache2/access.log \
