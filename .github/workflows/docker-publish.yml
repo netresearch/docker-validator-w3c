@@ -61,17 +61,13 @@ jobs:
         type=ref,event=pr
       # Don't push on PR.
       push: ${{ github.event_name != 'pull_request' }}
-      # Layer-cache policy. `cache-from=type=gha` restores the previous layer
-      # chain, so a cached run rebuilds nothing and never picks up a fresh
-      # upstream base image or OS patches. Before this migration the workflow
-      # passed no cache-from/cache-to at all (the old docker/build-push-action
-      # step set neither), so *every* trigger did a real rebuild.
-      # Restored here for the two triggers whose purpose is a fresh rebuild:
-      # the `38 4 * * *` nightly and a manual `workflow_dispatch` (the "rebuild
-      # and republish now" button). The two code-change triggers keep the
-      # cache. Note `v*.*.*` tag publishes are `push` events and so are cached;
-      # they build the same tree a cached master push just built.
-      cache: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
+      # GHA layer cache (`cache-from`/`cache-to=type=gha`, emitted by the
+      # reusable only when this input is true). Enabled for branch pushes and
+      # pull requests only. Release-tag (`refs/tags/v*.*.*`) pushes, `schedule`
+      # and `workflow_dispatch` build uncached — as every trigger did before
+      # this migration, where the `docker/build-push-action` step passed
+      # neither `cache-from` nor `cache-to`.
+      cache: ${{ (github.event_name == 'push' || github.event_name == 'pull_request') && !startsWith(github.ref, 'refs/tags/') }}
       # Cosign keyless (OIDC), as before; the reusable runs it only when
       # pushing, i.e. never on pull_request. The `!repository.private` guard
       # of the previous inline step is preserved here at the call site: the
