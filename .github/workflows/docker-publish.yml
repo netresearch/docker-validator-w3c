@@ -12,8 +12,10 @@ name: Docker
 # `docker buildx bake --print`, so the digest is resolved by cosign at signing
 # time rather than taken from the build output. In practice that is the same
 # manifest — the sign step runs in the same job, seconds after the push — but
-# it is a resolution, not a binding. Signing from the reusable's
-# `bake-metadata` digests belongs in netresearch/.github and is tracked there.
+# it is a resolution, not a binding. The reusable does expose a `bake-metadata`
+# output carrying each target's `containerimage.digest`, so a digest-pinned
+# sign step is possible — but only as a change inside netresearch/.github, not
+# at this call site. No such change is open there as of this PR.
 
 on:
   workflow_dispatch:
@@ -59,21 +61,32 @@ jobs:
         type=ref,event=pr
       # Don't push on PR.
       push: ${{ github.event_name != 'pull_request' }}
-      # The GHA layer cache would make the `38 4 * * *` nightly a no-op:
-      # cache-from restores the previous layer chain, so the run rebuilds
-      # nothing and never picks up a fresh upstream base image or OS patches.
-      # Push/PR builds keep the cache; scheduled security rebuilds do not.
-      cache: ${{ github.event_name != 'schedule' }}
+      # Layer-cache policy. `cache-from=type=gha` restores the previous layer
+      # chain, so a cached run rebuilds nothing and never picks up a fresh
+      # upstream base image or OS patches. Before this migration the workflow
+      # passed no cache-from/cache-to at all (the old docker/build-push-action
+      # step set neither), so *every* trigger did a real rebuild.
+      # Restored here for the two triggers whose purpose is a fresh rebuild:
+      # the `38 4 * * *` nightly and a manual `workflow_dispatch` (the "rebuild
+      # and republish now" button). The two code-change triggers keep the
+      # cache. Note `v*.*.*` tag publishes are `push` events and so are cached;
+      # they build the same tree a cached master push just built.
+      cache: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
       # Cosign keyless (OIDC), as before; the reusable runs it only when
       # pushing, i.e. never on pull_request. The `!repository.private` guard
       # of the previous inline step is preserved here at the call site: the
       # keyless flow records signatures on the public Rekor transparency log,
       # so it stays off if this repo ever becomes private.
       sign: ${{ !github.event.repository.private }}
-      # ci.yml (docker-image-ci) only runs on push:[master,main] and
-      # pull_request, so it never sees the schedule / workflow_dispatch /
-      # tag-push publishes this workflow performs. Scan here as well so every
-      # *published* image is scanned. Trivy is report-only (SARIF to code
-      # scanning, no exit-code), and the reusable skips it when nothing is
-      # pushed or loaded — i.e. it does not run on pull_request.
+      # This is the repository's ONLY Trivy image scan. ci.yml calls
+      # docker-image-ci.yml, whose `build` job calls build-container.yml with
+      # `push: false`; that reusable gates both its Trivy step and its SARIF
+      # upload on `inputs.scan && inputs.push`, so its image scan is skipped
+      # on every ci.yml trigger. ci.yml's remaining security checks are
+      # hadolint, gitleaks and (on PRs) dependency-review — no image scan.
+      # Scanning here therefore covers every *published* image: push to
+      # master, `v*.*.*` tags, schedule and workflow_dispatch. Trivy is
+      # report-only (SARIF to code scanning, no --exit-code) and the reusable
+      # skips it unless something was pushed or loaded — so it does not run on
+      # pull_request here either (push=false, `load` left at its false default).
       scan: true
