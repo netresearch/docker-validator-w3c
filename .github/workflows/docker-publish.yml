@@ -1,9 +1,10 @@
 name: Docker
 
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
+# Build, publish and cosign-sign the image through the org bake reusable.
+# The workflow has zero step-level action `uses:` — checkout, buildx, registry
+# login, docker/metadata-action, the build and the keyless cosign signing all
+# run inside netresearch/.github build-container-bake.yml. The build itself is
+# defined in docker-bake.hcl (bake-only container builds, org policy).
 
 on:
   workflow_dispatch:
@@ -16,79 +17,42 @@ on:
   pull_request:
     branches: [ master ]
 
-env:
-  # Use docker.io for Docker Hub if empty
-  REGISTRY: ghcr.io
-  # github.repository as <account>/<repo>
-  IMAGE_NAME: netresearch/validator-w3c
-
+permissions: {}
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
+    uses: netresearch/.github/.github/workflows/build-container-bake.yml@main
     permissions:
       contents: read
       packages: write
+      # Required by the reusable's Trivy/SARIF step even though scanning is
+      # off here — a caller may not grant less than the called job declares.
+      security-events: write
       # This is used to complete the identity challenge
       # with sigstore/fulcio when running outside of PRs.
       id-token: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      # Install the cosign tool except on PR
-      # https://github.com/sigstore/cosign-installer
-      - name: Install cosign
-        if: github.event_name != 'pull_request'
-        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
-
-      # Workaround: https://github.com/docker/build-push-action/issues/461
-      - name: Setup Docker buildx
-        uses: docker/setup-buildx-action@8016837eba79c3b51bf2025379f48b6fc50f1236 # 8016837eba79c3b51bf2025379f48b6fc50f1236
-
-      # Login against a Docker registry except on PR
-      # https://github.com/docker/login-action
-      - name: Log into registry ${{ env.REGISTRY }}
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # c144859092e8e353f3e118b0b329679a62351c3e
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      # Extract metadata (tags, labels) for Docker
-      # https://github.com/docker/metadata-action
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-
-      # Build and push Docker image with Buildx (don't push on PR)
-      # https://github.com/docker/build-push-action
-      - name: Build and push Docker image
-        id: build-and-push
-        uses: docker/build-push-action@b66d8774c665b789105b440514f0c97e6f19b06f # de308676347136a77704e0f257298c8f1b30054f
-        with:
-          context: .
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-      # Sign the resulting Docker image digest except on PRs and private repos
-      # The keyless signing process records signatures on the Rekor public
-      # transparency log, so signing is disabled for private repos by default
-      # to avoid leaking private data.  If you wish to sign things anyways,
-      # then this check can be removed and --force can be added to the cosign
-      # command below.
-      # https://github.com/sigstore/cosign
-      - name: Sign the published Docker image
-        if: ${{ github.event_name != 'pull_request' && !github.event.repository.private }}
-        env:
-          COSIGN_EXPERIMENTAL: "true"
-        # This step uses the identity token to provision an ephemeral certificate
-        # against the sigstore community Fulcio instance, and records it to the
-        # sigstore community Rekor transparency log.
-        run: cosign sign --yes ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build-and-push.outputs.digest }}
+    with:
+      bake-file: docker-bake.hcl
+      # Build from the LOCAL checkout: docker/metadata-action writes its tag and
+      # label bake files to $RUNNER_TEMP, which the default git remote context
+      # cannot see.
+      bake-source: "."
+      targets: app
+      registry: ghcr.io
+      metadata-images: ghcr.io/netresearch/validator-w3c
+      # docker/metadata-action's four built-in defaults, previously implicit
+      # (the old `Extract Docker metadata` step passed no `tags:`). Spelled out
+      # so the published tag set is auditable at the call site.
+      metadata-tags: |
+        type=schedule
+        type=ref,event=branch
+        type=ref,event=tag
+        type=ref,event=pr
+      # Don't push on PR.
+      push: ${{ github.event_name != 'pull_request' }}
+      # Cosign keyless (OIDC), as before; the reusable runs it only when
+      # pushing, i.e. never on pull_request.
+      sign: true
+      # Image scanning stays in ci.yml (docker-image-ci); this workflow keeps
+      # its previous scope: build, push, sign.
+      scan: false
