@@ -36,5 +36,3 @@ jobs:
       enable-gitleaks: true
       enable-codeql: false
       enable-smoke-test: false
-    secrets:
-      GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
