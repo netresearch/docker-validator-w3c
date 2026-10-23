@@ -61,12 +61,13 @@ jobs:
         type=ref,event=pr
       # Don't push on PR.
       push: ${{ github.event_name != 'pull_request' }}
-      # GHA layer cache (`cache-from`/`cache-to=type=gha`, emitted by the
-      # reusable only when this input is true). Enabled for branch pushes and
-      # pull requests only. Release-tag (`refs/tags/v*.*.*`) pushes, `schedule`
-      # and `workflow_dispatch` build uncached — as every trigger did before
-      # this migration, where the `docker/build-push-action` step passed
-      # neither `cache-from` nor `cache-to`.
+      # GHA layer cache: the reusable reads it (`cache-from`) only when this
+      # input is true and writes it (`cache-to`) on every run. Reading is
+      # enabled for branch pushes and pull requests only. Release-tag
+      # (`refs/tags/v*.*.*`) pushes, `schedule` and `workflow_dispatch` build
+      # without reading it — as every trigger did before this migration, where
+      # the `docker/build-push-action` step passed neither `cache-from` nor
+      # `cache-to`.
       cache: ${{ (github.event_name == 'push' || github.event_name == 'pull_request') && !startsWith(github.ref, 'refs/tags/') }}
       # Cosign keyless (OIDC), as before; the reusable runs it only when
       # pushing, i.e. never on pull_request. The `!repository.private` guard
